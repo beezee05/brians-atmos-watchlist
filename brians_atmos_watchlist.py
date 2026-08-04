@@ -81,7 +81,8 @@ for entry in feed.entries:
 
     published = entry.get("published_parsed")
     if published:
-        fe.pubDate(datetime(*published[:6]))
+        from datetime import timezone
+fe.pubDate(datetime(*published[:6], tzinfo=timezone.utc))
 
 fg.rss_file(OUTPUT_FILE)
 
