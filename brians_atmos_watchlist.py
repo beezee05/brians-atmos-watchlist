@@ -3,19 +3,19 @@ import html
 import re
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
-from xml.etree.ElementTree import Element, SubElement, ElementTree, tostring
+from xml.etree.ElementTree import Element, SubElement, ElementTree
 
 SOURCE_FEED = "https://spatialaudiodb.com/rss/dolby-atmos.xml"
 OUTPUT_FILE = "brians_atmos_watchlist.xml"
 
 FEED_TITLE = "Brian's Atmos Watchlist"
 FEED_DESCRIPTION = (
-    "Filtered Dolby Atmos releases, remasters and upgrades "
-    "focused on rock and related genres."
+    "New Dolby Atmos and Spatial Audio releases, remasters and upgrades "
+    "filtered for rock and related genres."
 )
 FEED_LINK = "https://spatialaudiodb.com/"
 
-# Genres/styles we WANT.
+# Genres we want.
 POSITIVE_GENRES = [
     "rock",
     "classic rock",
@@ -43,14 +43,10 @@ POSITIVE_GENRES = [
     "soft rock",
     "country rock",
     "americana",
-    "blues",
     "singer-songwriter",
-    "alternative",
-    "indie",
-    "pop",
 ]
 
-# Things we definitely DON'T want.
+# Things we definitely don't want.
 NEGATIVE_TERMS = [
     "anime",
     "j-pop",
@@ -67,13 +63,13 @@ NEGATIVE_TERMS = [
     "game music",
     "soundtrack",
     "original soundtrack",
-    "ost",
+    " ost",
     "anime soundtrack",
     "character song",
     "character album",
     "children",
     "children's",
-    "kids",
+    "kids music",
     "nursery",
     "meditation",
     "sleep music",
@@ -94,29 +90,115 @@ NEGATIVE_TERMS = [
     "karaoke",
     "tribute band",
     "tribute album",
+    "dj mix",
+    "dj set",
+    "edc ",
+    "house music",
+    "deep house",
+    "tech house",
+    "techno",
+    "trance",
+    "dubstep",
+    "drum and bass",
+    "drum & bass",
+    "electronic dance",
+    "dance music",
+    "edm",
+    "electro house",
+    "future bass",
+    "hardstyle",
+    "reggaeton",
+    "latin urban",
+    "dancehall",
 ]
 
-# These are strong indicators that the item is a legacy/remaster/remix
-# or an important Atmos upgrade.
-SPECIAL_TERMS = [
+# Strong indicators of an important catalog release.
+LEGACY_TERMS = [
     "remaster",
     "remastered",
-    "remix",
-    "2026 mix",
-    "2025 mix",
-    "2024 mix",
-    "anniversary",
+    "anniversary edition",
     "deluxe edition",
     "expanded edition",
+    "super deluxe",
+    "box set",
     "atmos mix",
     "dolby atmos",
     "spatial audio",
-    "immersive",
+]
+
+# Artists whose catalog is overwhelmingly relevant to this feed.
+# This is a BOOST/SAFETY NET, not a whitelist.
+LEGACY_ARTISTS = [
+    "pink floyd",
+    "the beatles",
+    "rolling stones",
+    "led zeppelin",
+    "genesis",
+    "phil collins",
+    "peter gabriel",
+    "dire straits",
+    "mark knopfler",
+    "fleetwood mac",
+    "eagles",
+    "steely dan",
+    "supertramp",
+    "the police",
+    "sting",
+    "the doors",
+    "david bowie",
+    "bruce springsteen",
+    "tom petty",
+    "billy joel",
+    "elton john",
+    "rush",
+    "yes",
+    "jethro tull",
+    "toto",
+    "chicago",
+    "electric light orchestra",
+    "elo",
+    "tears for fears",
+    "talk talk",
+    "simple minds",
+    "roxy music",
+    "joe jackson",
+    "genesis",
+    "u2",
+    "queen",
+    "ac/dc",
+    "van halen",
+    "def leppard",
+    "bon jovi",
+    "journey",
+    "boston",
+    "foreigner",
+    "styx",
+    "heart",
+    "pat benatar",
+    "bryan adams",
+    "hall & oates",
+    "huey lewis",
+    "red hot chili peppers",
+    "r.e.m.",
+    "the cure",
+    "depeche mode",
+    "new order",
+    "the fixx",
+    "alan parsons",
+    "alan parsons project",
+    "supertramp",
+    "marvin gaye",
+    "bob dylan",
+    "neil young",
+    "joni mitchell",
+    "van morrison",
+    "eric clapton",
+    "jeff beck",
+    "steely dan",
 ]
 
 
 def clean_text(value):
-    """Strip HTML and normalize whitespace."""
     if not value:
         return ""
 
@@ -127,7 +209,6 @@ def clean_text(value):
 
 
 def get_entry_text(entry):
-    """Combine the useful RSS fields into searchable text."""
     parts = []
 
     for field in [
@@ -135,23 +216,12 @@ def get_entry_text(entry):
         "summary",
         "description",
         "author",
-        "category",
-        "tags",
     ]:
         value = entry.get(field)
 
-        if isinstance(value, list):
-            for item in value:
-                if isinstance(item, dict):
-                    parts.append(str(item.get("term", "")))
-                else:
-                    parts.append(str(item))
-        elif isinstance(value, dict):
-            parts.append(str(value.get("term", "")))
-        elif value:
+        if value:
             parts.append(str(value))
 
-    # Also inspect any RSS category tags feedparser exposes.
     for tag in entry.get("tags", []):
         if isinstance(tag, dict):
             parts.append(str(tag.get("term", "")))
@@ -160,80 +230,68 @@ def get_entry_text(entry):
 
 
 def contains_negative_term(text):
-    text_lower = text.lower()
+    lower = text.lower()
 
     for term in NEGATIVE_TERMS:
-        if term in text_lower:
+        if term in lower:
             return True
 
     return False
 
 
 def has_positive_genre(text):
-    text_lower = text.lower()
+    lower = text.lower()
 
     for genre in POSITIVE_GENRES:
-        if genre in text_lower:
+        if genre in lower:
             return True
 
     return False
 
 
-def has_special_term(text):
-    text_lower = text.lower()
+def is_legacy_artist(text):
+    lower = text.lower()
 
-    for term in SPECIAL_TERMS:
-        if term in text_lower:
+    for artist in LEGACY_ARTISTS:
+        if artist in lower:
+            return True
+
+    return False
+
+
+def has_legacy_term(text):
+    lower = text.lower()
+
+    for term in LEGACY_TERMS:
+        if term in lower:
             return True
 
     return False
 
 
 def should_keep(entry):
-    """
-    Keep music that looks relevant to Brian's preferred genres.
-
-    We use a conservative filter:
-    - Explicit unwanted genres/content are rejected.
-    - Explicit rock/related genres are accepted.
-    - Important remasters/remixes/Atmos upgrades can pass when they
-      aren't clearly from an unwanted category.
-    """
-
     text = get_entry_text(entry)
     lower = text.lower()
 
-    # First, remove obvious noise.
+    # First and most important rule:
+    # obvious unwanted material is ALWAYS rejected.
     if contains_negative_term(text):
         return False
 
-    # Explicitly relevant genres get through.
+    # Explicit rock-related genre = keep.
     if has_positive_genre(text):
         return True
 
-    # Legacy/remaster/Atmos releases get a secondary chance,
-    # but only if they don't contain obvious unwanted content.
-    if has_special_term(text):
-        # Avoid letting generic pop/unknown releases flood the feed.
-        # Require a recognizable musical context.
-        music_context = [
-            "album",
-            "single",
-            "ep",
-            "release",
-            "artist",
-            "band",
-            "rock",
-            "music",
-        ]
+    # Established legacy rock artist + important catalog release = keep.
+    if is_legacy_artist(text) and has_legacy_term(text):
+        return True
 
-        return any(term in lower for term in music_context)
-
+    # Do NOT allow generic remixes, Atmos releases or electronic material
+    # through without a rock-related genre or legacy artist.
     return False
 
 
 def parse_date(entry):
-    """Return a timezone-aware datetime."""
     raw = entry.get("published") or entry.get("updated")
 
     if raw:
@@ -247,7 +305,6 @@ def parse_date(entry):
         except Exception:
             pass
 
-    # Feedparser often provides a parsed time tuple.
     for field in ["published_parsed", "updated_parsed"]:
         value = entry.get(field)
 
@@ -263,33 +320,100 @@ def parse_date(entry):
     return datetime.now(timezone.utc)
 
 
+def get_artist(entry):
+    author = clean_text(entry.get("author", ""))
+
+    if author:
+        return author
+
+    title = clean_text(entry.get("title", ""))
+
+    # Many Spatial Audio Database entries use:
+    # "Album Title - Artist"
+    if " - " in title:
+        pieces = title.rsplit(" - ", 1)
+
+        if len(pieces) == 2:
+            return pieces[1].strip()
+
+    return ""
+
+
+def get_release_type(entry):
+    title = clean_text(entry.get("title", "")).lower()
+
+    if "album" in title:
+        return "Album"
+
+    if "ep" in title:
+        return "EP"
+
+    if "single" in title:
+        return "Single"
+
+    return "Release"
+
+
+def make_description(entry):
+    text = get_entry_text(entry)
+
+    labels = []
+
+    if "dolby atmos" in text.lower():
+        labels.append("Dolby Atmos")
+
+    if "spatial audio" in text.lower():
+        labels.append("Spatial Audio")
+
+    if "remaster" in text.lower():
+        labels.append("Remaster")
+
+    if "anniversary" in text.lower():
+        labels.append("Anniversary Edition")
+
+    if "deluxe" in text.lower():
+        labels.append("Deluxe Edition")
+
+    if not labels:
+        labels.append("Dolby Atmos release")
+
+    return " • ".join(dict.fromkeys(labels))
+
+
 def make_rss_item(channel, entry):
     item = SubElement(channel, "item")
 
     title = clean_text(entry.get("title", "Untitled release"))
     link = entry.get("link", "")
-    description = clean_text(
-        entry.get("summary")
-        or entry.get("description")
-        or ""
-    )
 
-    # Keep descriptions reasonably short.
-    if len(description) > 1000:
-        description = description[:997] + "..."
+    artist = get_artist(entry)
+    release_type = get_release_type(entry)
+    description = make_description(entry)
 
-    SubElement(item, "title").text = title
+    # Make the title a little cleaner when artist information is available.
+    if artist and artist.lower() not in title.lower():
+        display_title = f"{artist} — {title}"
+    else:
+        display_title = title
+
+    SubElement(item, "title").text = display_title
 
     if link:
         SubElement(item, "link").text = link
 
     guid = SubElement(item, "guid")
     guid.set("isPermaLink", "false")
-    guid.text = link or title
+    guid.text = link or display_title
+
+    if artist:
+        description = f"{release_type} • {description} • {artist}"
+    else:
+        description = f"{release_type} • {description}"
 
     SubElement(item, "description").text = description
 
     pub_date = parse_date(entry)
+
     SubElement(item, "pubDate").text = pub_date.strftime(
         "%a, %d %b %Y %H:%M:%S +0000"
     )
@@ -299,6 +423,7 @@ def make_rss_item(channel, entry):
 
 def main():
     print("Downloading Spatial Audio Database feed...")
+
     feed = feedparser.parse(SOURCE_FEED)
 
     if feed.bozo and not feed.entries:
@@ -314,7 +439,6 @@ def main():
         if should_keep(entry):
             kept.append(entry)
 
-    # Newest first.
     kept.sort(
         key=parse_date,
         reverse=True
@@ -322,7 +446,6 @@ def main():
 
     print(f"Filtered entries: {len(kept)}")
 
-    # Build RSS 2.0.
     rss = Element(
         "rss",
         {
@@ -337,12 +460,12 @@ def main():
     SubElement(channel, "description").text = FEED_DESCRIPTION
     SubElement(channel, "language").text = "en-ca"
 
-    # Prevent an unexpectedly huge feed.
+    # Keep the feed manageable.
     for entry in kept[:50]:
         make_rss_item(channel, entry)
 
-    # Write UTF-8 RSS XML.
     tree = ElementTree(rss)
+
     tree.write(
         OUTPUT_FILE,
         encoding="utf-8",
