@@ -111,7 +111,8 @@ a { color: var(--purple-dark); }
   z-index: 50;
   background: rgba(250, 246, 240, 0.92);
   backdrop-filter: blur(6px);
-  border-bottom: 1px solid var(--cream-dark);
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(90deg, var(--purple) 0%, var(--forest) 100%) 1;
 }
 
 .header-inner {
@@ -172,7 +173,7 @@ a { color: var(--purple-dark); }
 .hero {
   padding: 90px 0 70px;
   text-align: center;
-  background: radial-gradient(circle at top, var(--forest-light) 0%, var(--cream) 65%);
+  background: linear-gradient(135deg, var(--purple-light) 0%, var(--cream) 42%, var(--forest-light) 100%);
 }
 
 .hero h1 {
@@ -211,7 +212,7 @@ a { color: var(--purple-dark); }
 
 /* Shop */
 .shop {
-  background: var(--cream-dark);
+  background: var(--forest-light);
 }
 
 .product-grid {
@@ -236,7 +237,7 @@ a { color: var(--purple-dark); }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--forest-light);
+  background: var(--cream);
   border-radius: 50%;
 }
 
@@ -259,6 +260,10 @@ a { color: var(--purple-dark); }
 }
 
 /* Steps */
+.custom-orders {
+  background: var(--purple-light);
+}
+
 .steps {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -303,6 +308,7 @@ a { color: var(--purple-dark); }
 .contact-form {
   background: #fff;
   border-radius: var(--radius);
+  border-top: 5px solid var(--purple);
   padding: 32px;
   box-shadow: 0 2px 14px rgba(46, 42, 38, 0.08);
   display: flex;
@@ -345,6 +351,8 @@ a { color: var(--purple-dark); }
   background: var(--charcoal);
   color: var(--cream-dark);
   padding: 32px 0;
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, var(--forest) 0%, var(--purple) 100%) 1;
 }
 
 .footer-inner {
