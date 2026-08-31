@@ -1,7 +1,7 @@
-# Caroline Clarke — Website
+# Clarke's Creations — Website
 
-A simple static website for Caroline Clarke's handmade & personalized gifts
-business (wind spinners, coffee mugs, t-shirts, slates).
+A simple static website for Clarke's Creations, Caroline Clarke's handmade &
+personalized gifts business (wind spinners, coffee mugs, t-shirts, slates).
 
 ## Structure
 
